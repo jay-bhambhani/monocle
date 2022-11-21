@@ -3,7 +3,6 @@ from typing import List
 
 from docarray import DocumentArray
 import numpy as np
-import tensorflow as tf
 
 
 class Processor(abc.ABC):

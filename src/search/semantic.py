@@ -17,14 +17,12 @@ class MonocleData:
 
 @dataclass
 class GraphNode(MonocleData):
-    id: Text
     key: Text
     properties: JSON
 
 
 @dataclass
 class GraphRelationship(MonocleData):
-    id: Text
     key: Text
     value: Text
     node: GraphNode
@@ -33,13 +31,11 @@ class GraphRelationship(MonocleData):
 
 @dataclass
 class RelationalData(MonocleData):
-    id: Text
     data: JSON
 
 
 @dataclass
 class TimeSeriesData(MonocleData):
-    id: Text
     data_point: RelationalData
     timestamp: Text
 
