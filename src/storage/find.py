@@ -43,7 +43,7 @@ class FindMixin(BaseFindMixin):
         """
         Return vector search results for the input query. `script_score` will be used in filter_field is set.
         :param query: query vector used for vector search
-        :param filter: filter query used for pre-filtering
+        :param filter: filter query used for post-filtering
         :param limit: number of items to be retrieved
         :return: DocumentArray containing the closest documents to the query if it is a single query, otherwise a list of DocumentArrays containing
            the closest Document objects for each of the queries in `query`.
@@ -54,18 +54,21 @@ class FindMixin(BaseFindMixin):
             query = query + EPSILON
 
         knn_query = {
-            'field': 'embedding',
-            'query_vector': query,
-            'k': limit,
-            'num_candidates': 10000
-            if 'num_candidates' not in kwargs
-            else kwargs['num_candidates'],
+            'size': 10000 if 'limit' not in kwargs else kwargs['limit'],
+            'query': {
+                'knn': {
+                    'embedding': {
+                        'vector': query,
+                        'k': limit
+                    }
+                },
+                "post_filter": filter
+            }
         }
 
-        resp = self._client.knn_search(
+        resp = self._client.search(
             index=self._config.index_name,
-            knn=knn_query,
-            filter=filter,
+            body=knn_query
         )
         list_of_hits = resp['hits']['hits']
 
@@ -94,6 +97,8 @@ class FindMixin(BaseFindMixin):
         """
 
         query = {
+            '_source': ['id', 'blob', 'text'],
+            'size': limit,
             "bool": {
                 "must": [
                     {"match": {index: query}},
@@ -104,9 +109,7 @@ class FindMixin(BaseFindMixin):
 
         resp = self._client.search(
             index=self._config.index_name,
-            query=query,
-            source=['id', 'blob', 'text'],
-            size=limit,
+            body=query
         )
         list_of_hits = resp['hits']['hits']
 
@@ -163,10 +166,10 @@ class FindMixin(BaseFindMixin):
         ]
 
     def _find_with_filter(self, query: Dict, limit: Optional[Union[int, float]] = 20):
+        query['size'] = limit
         resp = self._client.search(
             index=self._config.index_name,
-            query=query,
-            size=limit,
+            body=query
         )
         list_of_hits = resp['hits']['hits']
 
