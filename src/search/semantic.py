@@ -8,6 +8,12 @@ import numpy as np
 
 from backend.internal import Processor, Model
 from docarray.typing import Image, Text, Blob, JSON
+import prefect
+from prefect import task, flow
+
+
+class DBDocument:
+    pass
 
 
 @dataclass
@@ -51,22 +57,26 @@ class MonocleMetadata:
     created_at: Text
 
 
+@flow
 def create_data_from_docs(
         model: Model,
         processor: Processor,
-        docs: List[MonocleMetadata],
+        docs: List[DBDocument],
         **kwargs
 ) -> np.ndarray:
     da = DocumentArray(
-        storage='elasticsearch',
-        config={
-
-        }
+        storage='opensearch',
+        config=dict(
+            n_dim=128,
+            hosts=[],
+            index_name='monocle_data'
+        )
     )
     da.extend([create_docarray_doc(processor, doc) for doc in docs])
-    da.embed(model)
+    da.embeddings = model.generate_embeddings(da.tensors)
 
 
+@task
 def create_docarray_doc(processor: Processor, doc: DBDocument):
     return MonocleMetadata(
         uuid=doc.uuid,
